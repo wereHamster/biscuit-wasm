@@ -4,6 +4,7 @@ use biscuit_auth as biscuit;
 use serde::Deserialize;
 use std::time::Duration;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use js_sys::Reflect;
 
 use crate::{Biscuit, BlockBuilder, Check, Fact, Policy, PublicKey, Rule, Term};
 
@@ -161,7 +162,32 @@ impl Authorizer {
 
         let facts = js_sys::Array::new();
         for f in v.into_iter().map(Fact) {
-            facts.push(&JsValue::from(f));
+            let fact = js_sys::Object::new();
+
+            let predicate = js_sys::Object::new();
+
+            let terms = js_sys::Array::new();
+            for t in f.0.predicate.terms.into_iter() {
+                match t {
+                    crate::biscuit::builder::Term::Variable(ref _v) => terms.push(&JsValue::from("Variable")),
+                    crate::biscuit::builder::Term::Integer(ref i) => terms.push(&JsValue::from(*i)),
+                    crate::biscuit::builder::Term::Str(ref s) => terms.push(&JsValue::from(s.clone())),
+                    crate::biscuit::builder::Term::Date(ref d) => terms.push(&JsValue::from(*d)),
+                    crate::biscuit::builder::Term::Bytes(ref _b) => terms.push(&JsValue::from("Bytes")),
+                    crate::biscuit::builder::Term::Bool(ref b) => terms.push(&JsValue::from(*b)),
+                    crate::biscuit::builder::Term::Set(ref _s) => terms.push(&JsValue::from("Set")),
+                    crate::biscuit::builder::Term::Parameter(ref _p) => terms.push(&JsValue::from("Parameter")),
+                };
+
+               // terms.push(&JsValue::from(t.to_string()));
+            }
+
+            Reflect::set(&predicate, &"name".into(), &JsValue::from(f.0.predicate.name.to_string())).unwrap();
+            Reflect::set(&predicate, &"terms".into(), &JsValue::from(terms)).unwrap();
+
+            Reflect::set(&fact, &"predicate".into(), &predicate).unwrap();
+
+            facts.push(&fact);
         }
 
         Ok(facts)

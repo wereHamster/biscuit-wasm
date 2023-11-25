@@ -2,9 +2,10 @@
 
 mkShell {
   buildInputs = [
-    pkgconfig
+    pkg-config
     rustup
+    wasm-pack
     openssl
-    nodejs-16_x
+    nodejs_20
   ];
 }
